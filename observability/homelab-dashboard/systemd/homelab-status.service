@@ -1,0 +1,14 @@
+[Unit]
+Description=EdMaker Homelab Proxmox Status Adapter
+Documentation=file:/usr/local/lib/homelab-monitor/status_adapter.py
+After=local-fs.target
+ConditionPathExists=/usr/local/lib/homelab-monitor/status_adapter.py
+ConditionPathExists=/var/lib/pve-healthcheck/status.json
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+ExecStart=/usr/local/lib/homelab-monitor/update-status.sh
+TimeoutStartSec=30
+UMask=0022

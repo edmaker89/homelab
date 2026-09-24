@@ -1,0 +1,9 @@
+[Unit]
+Description=Watch PVE Healthcheck Status Changes
+
+[Path]
+PathChanged=/var/lib/pve-healthcheck/status.json
+Unit=homelab-status.service
+
+[Install]
+WantedBy=multi-user.target
