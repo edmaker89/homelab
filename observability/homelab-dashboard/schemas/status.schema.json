@@ -1,0 +1,189 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://edmaker.dev.br/schemas/homelab-status.schema.json",
+  "title": "EdMaker Homelab Host Status",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "generated_at",
+    "host",
+    "health",
+    "resources",
+    "storage",
+    "services",
+    "system",
+    "platform"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "generated_at": {
+      "type": "string"
+    },
+    "host": {
+      "type": "object",
+      "required": [
+        "hostname",
+        "fqdn",
+        "kernel",
+        "architecture",
+        "uptime_seconds"
+      ],
+      "properties": {
+        "hostname": {
+          "type": "string"
+        },
+        "fqdn": {
+          "type": "string"
+        },
+        "kernel": {
+          "type": "string"
+        },
+        "architecture": {
+          "type": "string"
+        },
+        "uptime_seconds": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "health": {
+      "type": "object",
+      "required": [
+        "status",
+        "issue_count",
+        "issues",
+        "transitions"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "OK",
+            "WARNING",
+            "CRITICAL",
+            "UNKNOWN"
+          ]
+        },
+        "issue_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "issues": {
+          "type": "array"
+        },
+        "transitions": {
+          "type": "array"
+        }
+      }
+    },
+    "resources": {
+      "type": "object",
+      "properties": {
+        "load": {
+          "type": "object"
+        },
+        "memory": {
+          "type": "object"
+        },
+        "swap": {
+          "type": "object"
+        }
+      }
+    },
+    "storage": {
+      "type": "object",
+      "properties": {
+        "root_filesystem": {
+          "type": "object"
+        },
+        "root_inodes": {
+          "type": "object"
+        }
+      }
+    },
+    "thermal": {
+      "type": "object"
+    },
+    "hardware_health": {
+      "type": "object",
+      "properties": {
+        "smart": {
+          "type": "object"
+        }
+      }
+    },
+    "time_sync": {
+      "type": "object",
+      "properties": {
+        "provider": {
+          "type": "string"
+        },
+        "status": {
+          "type": ["string", "null"]
+        },
+        "reference": {
+          "type": ["string", "null"]
+        },
+        "stratum": {
+          "type": ["integer", "null"]
+        },
+        "system_time": {
+          "type": ["string", "null"]
+        }
+      }
+    },
+    "services": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "system": {
+      "type": "object",
+      "properties": {
+        "failed_units": {
+          "type": "array"
+        },
+        "journal_usage": {
+          "type": ["string", "null"]
+        }
+      }
+    },
+    "security": {
+      "type": "object",
+      "properties": {
+        "firewall": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": ["string", "null"]
+            }
+          }
+        }
+      }
+    },
+    "monitoring": {
+      "type": "object",
+      "properties": {
+        "thresholds": {
+          "type": "object"
+        }
+      }
+    },
+    "platform": {
+      "type": "object",
+      "properties": {
+        "proxmox": {
+          "type": ["object", "null"]
+        },
+        "docker": {
+          "type": ["object", "null"]
+        }
+      }
+    }
+  }
+}
