@@ -1,0 +1,93 @@
+# ============================================================
+# macOS
+# ============================================================
+.DS_Store
+
+# ============================================================
+# Environment / secrets
+# ============================================================
+.env
+.env.*
+!.env.example
+
+# ============================================================
+# Terraform / OpenTofu
+# ============================================================
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+
+crash.log
+crash.*.log
+
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+.terraformrc
+terraform.rc
+
+# IMPORTANTE:
+# .terraform.lock.hcl DEVE ser versionado.
+
+# ============================================================
+# Ansible
+# ============================================================
+*.retry
+.vault_pass
+.vault_pass.*
+vault-password
+vault-password.*
+ansible-vault-password
+ansible-vault-password.*
+
+# Arquivos Vault criptografados podem ser versionados.
+# Nunca armazenar secrets em plaintext no repositorio.
+
+# ============================================================
+# SSH / private keys
+# ============================================================
+**/.ssh/
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa
+id_ed25519
+id_ecdsa
+
+# ============================================================
+# Homelab dashboard - runtime data
+# ============================================================
+observability/homelab-dashboard/runtime/
+observability/homelab-dashboard/data/
+
+# Dados dinamicos nunca devem ir para o Git
+status.json
+state.json
+
+# ============================================================
+# Backups / temporary files
+# ============================================================
+backups/
+*.bak
+*.backup
+*.tmp
+*~
+
+# ============================================================
+# Python eventual
+# ============================================================
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# ============================================================
+# Editors
+# ============================================================
+.vscode/
+.idea/
