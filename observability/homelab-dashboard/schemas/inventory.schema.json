@@ -1,0 +1,190 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://edmaker.dev.br/schemas/homelab-inventory.schema.json",
+  "title": "EdMaker Homelab Host Inventory",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "generated_at",
+    "host",
+    "hardware",
+    "network",
+    "platform"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "generated_at": {
+      "type": "string"
+    },
+    "host": {
+      "type": "object",
+      "required": [
+        "hostname",
+        "fqdn",
+        "role",
+        "os",
+        "kernel"
+      ],
+      "properties": {
+        "hostname": {
+          "type": "string"
+        },
+        "fqdn": {
+          "type": "string"
+        },
+        "role": {
+          "type": "string",
+          "enum": [
+            "proxmox",
+            "docker-host",
+            "linux"
+          ]
+        },
+        "os": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "version": {
+              "type": "string"
+            },
+            "codename": {
+              "type": "string"
+            }
+          }
+        },
+        "kernel": {
+          "type": "string"
+        },
+        "architecture": {
+          "type": "string"
+        }
+      }
+    },
+    "hardware": {
+      "type": "object",
+      "properties": {
+        "manufacturer": {
+          "type": ["string", "null"]
+        },
+        "product_name": {
+          "type": ["string", "null"]
+        },
+        "bios": {
+          "type": "object",
+          "properties": {
+            "vendor": {
+              "type": ["string", "null"]
+            },
+            "version": {
+              "type": ["string", "null"]
+            },
+            "release_date": {
+              "type": ["string", "null"]
+            }
+          }
+        },
+        "cpu": {
+          "type": "object",
+          "properties": {
+            "model": {
+              "type": "string"
+            },
+            "sockets": {
+              "type": "integer"
+            },
+            "cores": {
+              "type": "integer"
+            },
+            "threads_per_core": {
+              "type": "integer"
+            },
+            "logical_cpus": {
+              "type": "integer"
+            },
+            "virtualization": {
+              "type": ["string", "null"]
+            }
+          }
+        },
+        "memory": {
+          "type": "object",
+          "properties": {
+            "total_bytes": {
+              "type": "integer"
+            }
+          }
+        },
+        "disks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "model": {
+                "type": ["string", "null"]
+              },
+              "size_bytes": {
+                "type": "integer"
+              },
+              "transport": {
+                "type": ["string", "null"]
+              }
+            }
+          }
+        }
+      }
+    },
+    "network": {
+      "type": "object",
+      "properties": {
+        "default_gateway": {
+          "type": ["string", "null"]
+        },
+        "dns_servers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "interfaces": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "mac": {
+                "type": ["string", "null"]
+              },
+              "ipv4": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "platform": {
+      "type": "object",
+      "properties": {
+        "proxmox": {
+          "type": ["object", "null"]
+        },
+        "docker": {
+          "type": ["object", "null"]
+        }
+      }
+    }
+  }
+}
