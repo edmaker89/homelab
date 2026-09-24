@@ -15,12 +15,18 @@ SCHEMA_VERSION = 1
 
 def run(command):
     try:
+        env = os.environ.copy()
+        env["LANG"] = "C"
+        env["LC_ALL"] = "C"
+
         result = subprocess.run(
             command,
             capture_output=True,
             text=True,
             check=False,
+            env=env,
         )
+
         if result.returncode != 0:
             return None
 
