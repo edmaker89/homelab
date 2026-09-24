@@ -1,0 +1,13 @@
+[Unit]
+Description=EdMaker Homelab Host Inventory Collector
+Documentation=file:/usr/local/lib/homelab-monitor/inventory.py
+After=local-fs.target
+ConditionPathExists=/usr/local/lib/homelab-monitor/inventory.py
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+ExecStart=/usr/local/lib/homelab-monitor/update-inventory.sh
+TimeoutStartSec=60
+UMask=0022

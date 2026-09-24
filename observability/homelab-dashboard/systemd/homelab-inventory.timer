@@ -1,0 +1,11 @@
+[Unit]
+Description=Refresh EdMaker Homelab Host Inventory
+
+[Timer]
+OnBootSec=3min
+OnUnitActiveSec=1d
+AccuracySec=1min
+Unit=homelab-inventory.service
+
+[Install]
+WantedBy=timers.target
