@@ -1,0 +1,138 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://edmaker.dev.br/schemas/homelab-guests.schema.json",
+  "title": "EdMaker Homelab Proxmox Guests",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "generated_at",
+    "node",
+    "summary",
+    "guests"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "generated_at": {
+      "type": "string"
+    },
+    "node": {
+      "type": "string"
+    },
+    "summary": {
+      "type": "object",
+      "required": [
+        "total",
+        "running",
+        "stopped",
+        "qemu",
+        "lxc"
+      ],
+      "properties": {
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "running": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "stopped": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "qemu": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "lxc": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "guests": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "vmid",
+          "name",
+          "type",
+          "status",
+          "template",
+          "cpu",
+          "memory",
+          "storage",
+          "uptime_seconds"
+        ],
+        "properties": {
+          "vmid": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "qemu",
+              "lxc"
+            ]
+          },
+          "status": {
+            "type": "string"
+          },
+          "template": {
+            "type": "boolean"
+          },
+          "cpu": {
+            "type": "object",
+            "properties": {
+              "allocated": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "usage": {
+                "type": "number",
+                "minimum": 0
+              }
+            }
+          },
+          "memory": {
+            "type": "object",
+            "properties": {
+              "used_bytes": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "max_bytes": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          },
+          "storage": {
+            "type": "object",
+            "properties": {
+              "used_bytes": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "max_bytes": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          },
+          "uptime_seconds": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    }
+  }
+}
