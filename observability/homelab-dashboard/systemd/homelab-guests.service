@@ -1,0 +1,13 @@
+[Unit]
+Description=EdMaker Homelab Proxmox Guests Collector
+Documentation=file:/usr/local/lib/homelab-monitor/guests.py
+After=pve-cluster.service
+ConditionPathExists=/usr/local/lib/homelab-monitor/guests.py
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+ExecStart=/usr/local/lib/homelab-monitor/update-guests.sh
+TimeoutStartSec=30
+UMask=0022

@@ -1,0 +1,11 @@
+[Unit]
+Description=Refresh EdMaker Homelab Proxmox Guests
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=2min
+AccuracySec=15s
+Unit=homelab-guests.service
+
+[Install]
+WantedBy=timers.target
