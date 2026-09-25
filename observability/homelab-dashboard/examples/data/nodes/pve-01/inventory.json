@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-09-24T20:00:00-03:00",
+  "host": {
+    "hostname": "pve-01",
+    "fqdn": "pve-01.home.arpa",
+    "role": "proxmox",
+    "os": {
+      "name": "Debian GNU/Linux 13 (trixie)",
+      "version": "13",
+      "codename": "trixie"
+    },
+    "kernel": "7.0.2-6-pve",
+    "architecture": "x86_64"
+  },
+  "hardware": {
+    "manufacturer": "LENOVO",
+    "product_name": "81FD",
+    "bios": {
+      "vendor": "LENOVO",
+      "version": "8RCN47WW",
+      "release_date": "09/27/2018"
+    },
+    "cpu": {
+      "model": "Intel Core i3-6006U",
+      "sockets": 1,
+      "cores": 2,
+      "threads_per_core": 2,
+      "logical_cpus": 4,
+      "virtualization": "VT-x"
+    },
+    "memory": {
+      "total_bytes": 4009230336
+    },
+    "disks": [
+      {
+        "name": "sda",
+        "model": "P4-120",
+        "size_bytes": 120034123776,
+        "transport": "SATA"
+      }
+    ]
+  },
+  "network": {
+    "default_gateway": "192.168.15.1",
+    "dns_servers": [
+      "192.168.15.1"
+    ],
+    "interfaces": [
+      {
+        "name": "vmbr0",
+        "mac": "02:00:00:00:00:01",
+        "ipv4": [
+          "192.168.15.200/24"
+        ]
+      },
+      {
+        "name": "nic0",
+        "mac": "02:00:00:00:00:02",
+        "ipv4": []
+      }
+    ]
+  },
+  "platform": {
+    "proxmox": {
+      "version": "pve-manager/9.2.18"
+    },
+    "docker": null
+  }
+}

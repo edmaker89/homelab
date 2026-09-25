@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-09-24T20:00:00-03:00",
+  "node": "pve-01",
+  "summary": {
+    "total": 0,
+    "running": 0,
+    "stopped": 0,
+    "qemu": 0,
+    "lxc": 0
+  },
+  "guests": []
+}

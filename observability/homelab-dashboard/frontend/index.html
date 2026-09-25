@@ -1,62 +1,36 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>pve-01 · Inventário Homelab</title>
-  <link rel="stylesheet" href="styles.css" />
-</head>
-<body>
-  <aside class="sidebar" id="sidebar">
-    <div class="brand">
-      <span class="brand__mark" id="brandMark" aria-hidden="true"></span>
-      <div class="brand__text">
-        <strong class="brand__name">pve-01</strong>
-        <span class="brand__sub">homelab</span>
-      </div>
-    </div>
-
-    <nav class="nav" id="nav" aria-label="Seções"></nav>
-
-    <div class="sidebar__foot">
-      <div class="mini">
-        <span class="mini__label">Proxmox</span>
-        <span class="mini__value">9.2.2</span>
-      </div>
-      <div class="mini">
-        <span class="mini__label">Kernel</span>
-        <span class="mini__value mono">7.0.2-6-pve</span>
-      </div>
-      <div class="mini">
-        <span class="mini__label">Endereço</span>
-        <span class="mini__value mono">192.168.15.200</span>
-      </div>
-    </div>
-  </aside>
-
-  <div class="shell">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Homelab · Operação</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <a class="skip" href="#main">Pular para conteúdo</a>
     <header class="topbar">
-      <button class="topbar__menu" id="menuBtn" aria-label="Abrir menu">
-        <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-      </button>
-      <div class="topbar__title">
-        <h1 class="topbar__host">pve-01<span class="topbar__dot">·</span><span class="topbar__dom">home.arpa</span></h1>
-        <p class="topbar__crumbs" id="crumbs">Visão Geral</p>
-      </div>
-      <div class="topbar__right">
-        <span class="pill pill--ok" id="onlinePill"><i class="pill__dot"></i>online</span>
-        <span class="topbar__clock mono" id="clock">--:--:--</span>
-      </div>
+      <a class="brand" href="#/"
+        >▤ <strong>Homelab</strong><span> / Operação</span></a
+      ><button id="refresh" type="button">Atualizar dados</button>
     </header>
-
-    <main class="main" id="main"></main>
-  </div>
-
-  <div class="modal" id="modal" role="dialog" aria-modal="true" aria-hidden="true">
-    <div class="modal__backdrop" id="modalBackdrop"></div>
-    <div class="modal__panel" id="modalPanel" role="document"></div>
-  </div>
-
-  <script src="app.js"></script>
-</body>
+    <div class="workspace">
+      <aside>
+        <p class="aside-title">Infraestrutura</p>
+        <nav id="nodes-nav" aria-label="Hosts">
+          <a href="#/">Visão geral</a>
+        </nav>
+        <p class="aside-note">
+          Inventário e saúde dos hosts.<br />O estado é informado pelos
+          collectors.
+        </p>
+      </aside>
+      <main id="main" tabindex="-1">
+        <p role="status">Carregando hosts…</p>
+      </main>
+    </div>
+    <p id="announcement" class="sr-only" role="status"></p>
+    <noscript>Ative JavaScript para carregar o dashboard.</noscript>
+    <script type="module" src="app.js"></script>
+  </body>
 </html>

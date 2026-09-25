@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-09-24T20:00:00-03:00",
+  "example": true,
+  "nodes": [
+    {
+      "id": "pve-01",
+      "role": "proxmox",
+      "data_path": "./nodes/pve-01"
+    }
+  ]
+}

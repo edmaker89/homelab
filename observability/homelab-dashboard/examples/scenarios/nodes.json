@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-09-24T20:00:00-03:00",
+  "example": true,
+  "nodes": [
+    {
+      "id": "fixture-warning",
+      "role": "linux",
+      "data_path": "./nodes/fixture-warning"
+    },
+    {
+      "id": "fixture-critical",
+      "role": "linux",
+      "data_path": "./nodes/fixture-critical"
+    },
+    {
+      "id": "fixture-partial",
+      "role": "linux",
+      "data_path": "./nodes/fixture-partial"
+    }
+  ]
+}

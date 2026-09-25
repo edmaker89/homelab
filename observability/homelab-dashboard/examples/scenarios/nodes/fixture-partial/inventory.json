@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-09-24T20:00:00-03:00",
+  "host": {
+    "hostname": "fixture-partial",
+    "fqdn": "fixture-partial.example.invalid",
+    "role": "linux",
+    "os": {
+      "name": "Debian GNU/Linux 13 (trixie)",
+      "version": "13",
+      "codename": "trixie"
+    },
+    "kernel": "7.0.2-6-pve",
+    "architecture": "x86_64"
+  },
+  "hardware": {
+    "cpu": {
+      "logical_cpus": 2
+    },
+    "memory": {
+      "total_bytes": 4294967296
+    }
+  },
+  "network": {},
+  "platform": {
+    "proxmox": null,
+    "docker": null
+  }
+}
