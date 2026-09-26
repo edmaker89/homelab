@@ -1,0 +1,67 @@
+---
+- name: Validate Docker host platform
+  ansible.builtin.assert:
+    that:
+      - ansible_facts['distribution'] == 'Debian'
+      - ansible_facts['distribution_major_version'] in ['12', '13']
+    fail_msg: >-
+      docker_engine currently supports Debian 12 and Debian 13 only.
+
+- name: Detect Debian package architecture
+  ansible.builtin.command:
+    cmd: dpkg --print-architecture
+  register: docker_dpkg_architecture
+  changed_when: false
+  check_mode: false
+
+- name: Ensure APT keyring directory exists
+  ansible.builtin.file:
+    path: "{{ docker_apt_keyring_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Install Docker repository signing key
+  ansible.builtin.get_url:
+    url: "{{ docker_apt_key_url }}"
+    dest: "{{ docker_apt_key_path }}"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Configure official Docker APT repository
+  ansible.builtin.copy:
+    dest: /etc/apt/sources.list.d/docker.sources
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      Types: deb
+      URIs: {{ docker_apt_repository_uri }}
+      Suites: {{ ansible_facts['distribution_release'] }}
+      Components: {{ docker_apt_component }}
+      Architectures: {{ docker_dpkg_architecture.stdout }}
+      Signed-By: {{ docker_apt_key_path }}
+
+- name: Refresh APT cache after configuring Docker repository
+  ansible.builtin.apt:
+    update_cache: true
+  when: not ansible_check_mode
+
+- name: Install Docker Engine packages
+  ansible.builtin.apt:
+    name: "{{ docker_packages }}"
+    state: present
+
+- name: Refresh package facts after Docker installation
+  ansible.builtin.package_facts:
+    manager: auto
+
+- name: Enable and start Docker service
+  ansible.builtin.service:
+    name: docker
+    enabled: true
+    state: started
+  when:
+    - not ansible_check_mode or ('docker-ce' in ansible_facts.packages)

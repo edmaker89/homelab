@@ -1,0 +1,14 @@
+---
+docker_apt_key_url: "https://download.docker.com/linux/debian/gpg"
+docker_apt_keyring_dir: "/etc/apt/keyrings"
+docker_apt_key_path: "/etc/apt/keyrings/docker.asc"
+
+docker_apt_repository_uri: "https://download.docker.com/linux/debian"
+docker_apt_component: "stable"
+
+docker_packages:
+  - docker-ce
+  - docker-ce-cli
+  - containerd.io
+  - docker-buildx-plugin
+  - docker-compose-plugin
