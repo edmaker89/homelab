@@ -1,0 +1,8 @@
+---
+- name: Bootstrap homelab Linux hosts
+  hosts: homelab
+  become: true
+  gather_facts: true
+
+  roles:
+    - common

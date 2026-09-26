@@ -1,0 +1,20 @@
+---
+common_locale: "pt_BR.UTF-8"
+common_locale_gen: "pt_BR.UTF-8 UTF-8"
+common_timezone: "America/Sao_Paulo"
+
+common_apt_upgrade: false
+
+common_packages:
+  - ca-certificates
+  - curl
+  - git
+  - gnupg
+  - htop
+  - jq
+  - locales
+  - unzip
+  - vim
+
+common_swap_size_mb: 2048
+common_swap_file: "/swapfile"

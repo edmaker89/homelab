@@ -1,0 +1,144 @@
+---
+- name: Refresh APT cache
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Upgrade installed packages when explicitly enabled
+  ansible.builtin.apt:
+    upgrade: dist
+  when: common_apt_upgrade | bool
+
+- name: Install common packages
+  ansible.builtin.apt:
+    name: "{{ common_packages }}"
+    state: present
+
+# -------------------------------------------------------------------
+# Locale
+# -------------------------------------------------------------------
+
+- name: Enable configured locale
+  ansible.builtin.lineinfile:
+    path: /etc/locale.gen
+    regexp: "^#?\\s*{{ common_locale | regex_escape }}\\s+UTF-8$"
+    line: "{{ common_locale_gen }}"
+    state: present
+  notify: Generate locales
+
+- name: Configure system locale
+  ansible.builtin.copy:
+    dest: /etc/default/locale
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      LANG={{ common_locale }}
+      LC_ALL={{ common_locale }}
+
+# -------------------------------------------------------------------
+# Timezone
+# -------------------------------------------------------------------
+
+- name: Read current timezone
+  ansible.builtin.command:
+    cmd: timedatectl show --property=Timezone --value
+  register: common_current_timezone
+  changed_when: false
+  check_mode: false
+
+- name: Configure timezone
+  ansible.builtin.command:
+    cmd: "timedatectl set-timezone {{ common_timezone }}"
+  when: common_current_timezone.stdout != common_timezone
+  changed_when: true
+
+# -------------------------------------------------------------------
+# Time synchronization
+# -------------------------------------------------------------------
+
+- name: Install Chrony
+  ansible.builtin.apt:
+    name: chrony
+    state: present
+
+- name: Refresh package facts after base packages
+  ansible.builtin.package_facts:
+    manager: auto
+
+- name: Enable and start Chrony
+  ansible.builtin.service:
+    name: chrony
+    enabled: true
+    state: started
+  when:
+    - not ansible_check_mode or ('chrony' in ansible_facts.packages)
+
+# -------------------------------------------------------------------
+# Proxmox guest integration
+# -------------------------------------------------------------------
+
+- name: Install QEMU Guest Agent
+  ansible.builtin.apt:
+    name: qemu-guest-agent
+    state: present
+
+- name: Start QEMU Guest Agent
+  ansible.builtin.service:
+    name: qemu-guest-agent
+    state: started
+  when:
+    - not ansible_check_mode or ('qemu-guest-agent' in ansible_facts.packages)
+
+# -------------------------------------------------------------------
+# Swap
+# -------------------------------------------------------------------
+
+- name: Check whether swap file exists
+  ansible.builtin.stat:
+    path: "{{ common_swap_file }}"
+  register: common_swapfile
+
+- name: Create swap file
+  ansible.builtin.command:
+    cmd: "fallocate -l {{ common_swap_size_mb }}M {{ common_swap_file }}"
+  when: not common_swapfile.stat.exists
+  register: common_swapfile_create
+  changed_when: true
+
+- name: Set swap file permissions
+  ansible.builtin.file:
+    path: "{{ common_swap_file }}"
+    owner: root
+    group: root
+    mode: "0600"
+  when:
+    - common_swapfile.stat.exists or not ansible_check_mode
+
+- name: Initialize swap file
+  ansible.builtin.command:
+    cmd: "mkswap {{ common_swap_file }}"
+  when: common_swapfile_create is changed
+  changed_when: true
+
+- name: Ensure swap file is present in fstab
+  ansible.builtin.lineinfile:
+    path: /etc/fstab
+    regexp: "^{{ common_swap_file | regex_escape }}\\s+"
+    line: "{{ common_swap_file }} none swap sw 0 0"
+    state: present
+
+- name: Read active swap devices
+  ansible.builtin.command:
+    cmd: swapon --show=NAME --noheadings
+  register: common_active_swap
+  changed_when: false
+  check_mode: false
+
+- name: Enable swap file
+  ansible.builtin.command:
+    cmd: "swapon {{ common_swap_file }}"
+  when:
+    - not ansible_check_mode
+    - common_swap_file not in common_active_swap.stdout_lines
+  changed_when: true

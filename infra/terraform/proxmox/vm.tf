@@ -13,7 +13,11 @@ resource "proxmox_virtual_environment_vm" "lab_docker_01" {
   # Debian cloud images do not include qemu-guest-agent by default.
   # Ansible will install it later.
   agent {
-    enabled = false
+    enabled = true
+
+    wait_for_ip {
+      disabled = true
+    }
   }
 
   # Until qemu-guest-agent is installed and enabled, avoid depending
