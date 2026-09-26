@@ -12,3 +12,10 @@ docker_packages:
   - containerd.io
   - docker-buildx-plugin
   - docker-compose-plugin
+
+docker_daemon_live_restore: true
+docker_daemon_no_new_privileges: true
+
+docker_log_driver: "local"
+docker_log_max_size: "20m"
+docker_log_max_file: "3"

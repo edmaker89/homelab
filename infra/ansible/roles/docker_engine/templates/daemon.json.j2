@@ -1,0 +1,9 @@
+{
+  "live-restore": {{ docker_daemon_live_restore | bool | lower }},
+  "no-new-privileges": {{ docker_daemon_no_new_privileges | bool | lower }},
+  "log-driver": "{{ docker_log_driver }}",
+  "log-opts": {
+    "max-size": "{{ docker_log_max_size }}",
+    "max-file": "{{ docker_log_max_file }}"
+  }
+}
