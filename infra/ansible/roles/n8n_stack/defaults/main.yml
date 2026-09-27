@@ -3,4 +3,5 @@ n8n_stack_dir: "/opt/homelab/stacks/n8n"
 n8n_config_dir: "/etc/homelab/n8n"
 n8n_data_dir: "/srv/homelab/n8n"
 
-n8n_env_file: "/etc/homelab/n8n/n8n.env"
+n8n_postgres_env_file: "/etc/homelab/n8n/postgres.env"
+n8n_app_env_file: "/etc/homelab/n8n/n8n.env"
