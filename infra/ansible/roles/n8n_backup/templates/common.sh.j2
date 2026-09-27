@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Sourced only by root-owned entry points. Never enable xtrace.
+set +x
+set -Eeuo pipefail
+umask 077
+[[ $EUID -eq 0 ]] || { echo 'Must run as root' >&2; exit 1; }
+source {{ (n8n_backup_config_dir ~ '/backup.conf') | quote }}
+# Shared host lock covers backup, maintenance, init and restore-test.
+exec 9>/run/lock/homelab-n8n-backup.lock
+flock -w 300 9 || { echo 'Backup operation already running' >&2; exit 1; }
+[[ -s "$RESTIC_PASSWORD_FILE" ]] || { echo 'Missing Restic password file' >&2; exit 1; }
+set -a
+source {{ (n8n_backup_config_dir ~ '/r2.env') | quote }}
+set +a
+: "${AWS_ACCESS_KEY_ID:?Missing R2 access key}"
+: "${AWS_SECRET_ACCESS_KEY:?Missing R2 secret key}"
+: "${AWS_DEFAULT_REGION:?Missing R2 region}"
+unset RESTIC_PASSWORD
+command -v restic >/dev/null
+restic version >/dev/null
+compose() { docker compose --project-directory "$STACK_DIR" -f "$STACK_DIR/compose.yaml" "$@"; }
+pg() { compose exec -T postgres "$@"; }
+repository_ready() { restic snapshots --json >/dev/null; }

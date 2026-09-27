@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+set +x
+set -Eeuo pipefail
+source /usr/local/lib/homelab-n8n-backup/common.sh
+work=''
+cleanup() {
+    local rc=$?
+    trap - EXIT
+    if [[ -n "$work" ]]; then rm -rf -- "$work" || rc=1; fi
+    if (( rc != 0 )); then echo "n8n backup failed (exit $rc)" >&2; fi
+    exit "$rc"
+}
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+
+docker info >/dev/null
+[[ -n "$(compose ps --status running -q postgres)" ]]
+pg pg_isready -U postgres -d postgres >/dev/null
+[[ -d "$APP_DIR" && ! -L "$APP_DIR" ]]
+repository_ready
+# Remove only stale run directories under the private root, while holding the lock.
+# Handles uncatchable SIGKILL/reboot; never follows symlinks.
+find "$BACKUP_ROOT" -mindepth 1 -maxdepth 1 -type d -name 'run-*' -mtime +1 -exec rm -rf -- {} +
+work=$(mktemp -d "$BACKUP_ROOT/run-$(date -u +%Y%m%dT%H%M%SZ)-XXXXXXXX")
+# Role passwords are recovered from SOPS, not duplicated as hashes in globals.
+pg pg_dumpall -U postgres --globals-only --no-role-passwords > "$work/globals.sql"
+pg pg_dump -U postgres -Fc n8n > "$work/n8n.dump"
+pg pg_dump -U postgres -Fc rag > "$work/rag.dump"
+pg pg_restore --list < "$work/n8n.dump" >/dev/null
+pg pg_restore --list < "$work/rag.dump" >/dev/null
+pg_version=$(pg psql -X -U postgres -d postgres -Atqc 'SHOW server_version')
+vector_version=$(pg psql -X -U postgres -d rag -Atqc "SELECT extversion FROM pg_extension WHERE extname='vector'")
+[[ -n "$vector_version" ]]
+n8n_version=$(compose exec -T n8n n8n --version)
+(cd "$work" && sha256sum globals.sql n8n.dump rag.dump > SHA256SUMS)
+python3 - "$work" "$pg_version" "$vector_version" "$n8n_version" <<'PYMETA'
+import datetime, hashlib, json, pathlib, socket, sys
+p=pathlib.Path(sys.argv[1])
+def digest(name):
+ with (p/name).open('rb') as f: return hashlib.file_digest(f,'sha256').hexdigest()
+metadata=dict(timestamp_utc=datetime.datetime.now(datetime.timezone.utc).isoformat(),
+ hostname=socket.gethostname(), postgresql_version=sys.argv[2], pgvector_version=sys.argv[3],
+ n8n_version=sys.argv[4].strip(), databases=['n8n','rag'],
+ repository_logical_name='n8n/restic', script_version='1',
+ sha256={n:digest(n) for n in ['globals.sql','n8n.dump','rag.dump']})
+(p/'metadata.json').write_text(json.dumps(metadata, indent=2)+'\n')
+PYMETA
+chmod 0600 "$work"/*
+# One snapshot contains both databases and application files. Never include PGDATA.
+# Protect the complete app state, including config, in the encrypted repository.
+restic backup --host "$BACKUP_HOST" --tag "$BACKUP_TAG" --group-by host,tags \
+    "$work" "$APP_DIR"
+# Restic prints the committed snapshot ID. Nonzero (including partial exit 3) fails.
+echo 'n8n backup completed'

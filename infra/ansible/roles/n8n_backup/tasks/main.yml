@@ -1,0 +1,157 @@
+---
+- name: Validate backup paths and identifiers
+  ansible.builtin.assert:
+    that:
+      - n8n_backup_root is match('^/var/backups/[a-zA-Z0-9/_-]+$')
+      - n8n_backup_config_dir is match('^/etc/[a-zA-Z0-9/_-]+$')
+      - n8n_backup_stack_dir is match('^/opt/[a-zA-Z0-9/_-]+$')
+      - n8n_backup_app_dir == '/srv/homelab/n8n/app'
+      - n8n_backup_host is match('^[a-zA-Z0-9_-]+$')
+      - n8n_backup_tag is match('^[a-zA-Z0-9_-]+$')
+
+- name: Load and validate credentials only when enabled
+  when: n8n_backup_enabled | bool
+  block:
+    - name: Check encrypted credentials file on controller
+      ansible.builtin.stat:
+        path: "{{ n8n_backup_sops_file }}"
+      delegate_to: localhost
+      become: false
+      register: n8n_backup_sops_stat
+
+    - name: Require encrypted credentials file
+      ansible.builtin.assert:
+        that: n8n_backup_sops_stat.stat.exists
+        fail_msg: "Create secrets/n8n-backup.sops.yaml using SOPS; see docs/runbooks/n8n-backup-restore.md."
+
+    - name: Read and validate backup secrets
+      block:
+        - name: Decrypt SOPS contract
+          ansible.builtin.set_fact:
+            n8n_backup_secrets: "{{ lookup('community.sops.sops', n8n_backup_sops_file) | from_yaml }}"
+          no_log: true
+
+        - name: Require nonempty single-line secrets and safe R2 keys
+          ansible.builtin.assert:
+            that:
+              - n8n_backup_secrets is mapping
+              - n8n_backup_secrets.restic_password is string
+              - n8n_backup_secrets.restic_password | length >= 20
+              - "'\n' not in n8n_backup_secrets.restic_password"
+              - "'\r' not in n8n_backup_secrets.restic_password"
+              - n8n_backup_secrets.r2_access_key_id is match('^[A-Za-z0-9]+$')
+              - n8n_backup_secrets.r2_secret_access_key is match('^[A-Za-z0-9/+=]+$')
+          no_log: true
+      rescue:
+        - name: Explain invalid backup credentials without exposing values
+          ansible.builtin.fail:
+            msg: "SOPS backup contract invalid: require restic_password (single line, >=20 chars), r2_access_key_id and r2_secret_access_key. Check AGE access on controller."
+
+- name: Install backup tools from Debian
+  ansible.builtin.apt:
+    name: [restic, python3, util-linux, coreutils]
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Create private backup directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+  loop:
+    - "{{ n8n_backup_root }}"
+    - "{{ n8n_backup_config_dir }}"
+    - /var/cache/homelab-n8n-backup
+    - /usr/local/lib/homelab-n8n-backup
+
+- name: Install nonsecret backup configuration
+  ansible.builtin.template:
+    src: backup.conf.j2
+    dest: "{{ n8n_backup_config_dir }}/backup.conf"
+    owner: root
+    group: root
+    mode: "0600"
+
+- name: Install backup shell library
+  ansible.builtin.template:
+    src: common.sh.j2
+    dest: /usr/local/lib/homelab-n8n-backup/common.sh
+    owner: root
+    group: root
+    mode: "0600"
+
+- name: Deploy credentials
+  when: n8n_backup_enabled | bool
+  no_log: true
+  block:
+    - name: Write Restic password file
+      ansible.builtin.copy:
+        content: "{{ n8n_backup_secrets.restic_password }}"
+        dest: "{{ n8n_backup_config_dir }}/restic-password"
+        owner: root
+        group: root
+        mode: "0600"
+    - name: Write R2 environment file
+      ansible.builtin.template:
+        src: r2.env.j2
+        dest: "{{ n8n_backup_config_dir }}/r2.env"
+        owner: root
+        group: root
+        mode: "0600"
+
+- name: Install backup commands
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "/usr/local/sbin/{{ item }}"
+    owner: root
+    group: root
+    mode: "0700"
+    validate: /bin/bash -n %s
+  loop:
+    - homelab-n8n-backup
+    - homelab-n8n-backup-maintenance
+    - homelab-n8n-restore-test
+    - homelab-n8n-restic
+
+- name: Install systemd services
+  ansible.builtin.template:
+    src: service.j2
+    dest: "/etc/systemd/system/{{ item }}.service"
+    owner: root
+    group: root
+    mode: "0644"
+  loop:
+    - homelab-n8n-backup
+    - homelab-n8n-backup-maintenance
+    - homelab-n8n-restore-test
+
+- name: Install systemd timers
+  ansible.builtin.template:
+    src: timer.j2
+    dest: "/etc/systemd/system/{{ item.name }}.timer"
+    owner: root
+    group: root
+    mode: "0644"
+  loop:
+    - name: homelab-n8n-backup
+      calendar: "{{ n8n_backup_calendar }}"
+    - name: homelab-n8n-backup-maintenance
+      calendar: "{{ n8n_backup_maintenance_calendar }}"
+
+- name: Reload systemd units
+  ansible.builtin.systemd_service:
+    daemon_reload: true
+  when: not ansible_check_mode
+
+- name: Manage timers only after units exist
+  ansible.builtin.systemd_service:
+    name: "{{ item }}.timer"
+    enabled: "{{ (n8n_backup_enabled | bool) and (n8n_backup_timers_enabled | bool) }}"
+    state: "{{ 'started' if (n8n_backup_enabled | bool) and (n8n_backup_timers_enabled | bool) else 'stopped' }}"
+  loop:
+    - homelab-n8n-backup
+    - homelab-n8n-backup-maintenance
+  when: not ansible_check_mode

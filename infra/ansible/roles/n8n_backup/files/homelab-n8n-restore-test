@@ -1,0 +1,111 @@
+#!/usr/bin/env bash
+set +x
+set -Eeuo pipefail
+source /usr/local/lib/homelab-n8n-backup/common.sh
+[[ $# -le 1 ]] || { echo 'Usage: homelab-n8n-restore-test [snapshot-id|latest]' >&2; exit 2; }
+snapshot=${1:-latest}
+[[ "$snapshot" == latest || "$snapshot" =~ ^[0-9a-fA-F]{8,64}$ ]] || exit 2
+work=''
+container=''
+volume=''
+success_message=''
+cleanup() {
+    local rc=$?
+    trap - EXIT
+    if [[ -n "$container" ]]; then
+        docker rm -f "$container" >/dev/null 2>&1 || rc=1
+    fi
+    if [[ -n "$volume" ]]; then
+        docker volume rm "$volume" >/dev/null 2>&1 || rc=1
+    fi
+    if [[ -n "$work" ]]; then rm -rf -- "$work" || rc=1; fi
+    if (( rc != 0 )); then
+        echo "Restore-test failed or cleanup incomplete (exit $rc)" >&2
+    elif [[ -n "$success_message" ]]; then
+        echo "$success_message"
+    fi
+    exit "$rc"
+}
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+repository_ready
+docker info >/dev/null
+work=$(mktemp -d "$BACKUP_ROOT/restore-$(date -u +%Y%m%dT%H%M%SZ)-XXXXXXXX")
+# Pin latest to an immutable ID, scoped to this backup set. Never restore production paths.
+restic snapshots --host "$BACKUP_HOST" --tag "$BACKUP_TAG" --json > "$work/snapshots.json"
+snapshot=$(python3 - "$work/snapshots.json" "$snapshot" <<'PYSNAPSHOT'
+import json, sys
+items=json.load(open(sys.argv[1]))
+if sys.argv[2] != 'latest':
+    items=[x for x in items if x['id'].startswith(sys.argv[2])]
+    if len(items) != 1: raise SystemExit('Snapshot not uniquely present in n8n backup set')
+if not items: raise SystemExit('No n8n snapshot found')
+print(max(items, key=lambda x:x['time'])['id'])
+PYSNAPSHOT
+)
+restic restore "$snapshot" --target "$work/restored" --include "$BACKUP_ROOT" --verify
+mapfile -d '' dumps < <(find "$work/restored" -type f -name n8n.dump -print0)
+[[ ${#dumps[@]} -eq 1 ]] || { echo 'Expected one PostgreSQL dump set' >&2; exit 1; }
+dumpdir=$(dirname "${dumps[0]}")
+# Fixed names only: never let a checksum manifest select arbitrary host paths.
+python3 - "$dumpdir" <<'PYCHECK'
+import hashlib, json, pathlib, sys
+p=pathlib.Path(sys.argv[1])
+names={'globals.sql','n8n.dump','rag.dump'}
+entries={}
+for line in (p/'SHA256SUMS').read_text().splitlines():
+    digest, name=line.split('  ',1)
+    if name not in names or name in entries: raise SystemExit('Invalid checksum manifest')
+    entries[name]=digest
+if set(entries)!=names: raise SystemExit('Incomplete checksum manifest')
+metadata=json.loads((p/'metadata.json').read_text())
+if metadata['databases']!=['n8n','rag']: raise SystemExit('Unexpected database metadata')
+for name, expected in entries.items():
+    with (p/name).open('rb') as f: actual=hashlib.file_digest(f,'sha256').hexdigest()
+    if actual != expected or metadata['sha256'][name] != actual:
+        raise SystemExit('Checksum mismatch: '+name)
+if not (p/'globals.sql').stat().st_size: raise SystemExit('Empty globals.sql')
+PYCHECK
+container="homelab-n8n-restore-${work##*/}"
+volume="$container-data"
+docker volume create --label homelab.n8n.restore-test=true "$volume" >/dev/null
+# No bridge, no external connectivity and no published ports. The only connection
+# is docker exec via the local Unix socket; no network resource needs cleanup.
+docker run -d --name "$container" --label homelab.n8n.restore-test=true \
+    --network none --memory 256m --memory-swap 512m --cpus 0.5 \
+    -e POSTGRES_USER=homelab_restore_admin -e POSTGRES_HOST_AUTH_METHOD=trust \
+    --mount "type=volume,src=$volume,dst=/var/lib/postgresql/data" \
+    "$RESTORE_IMAGE" >/dev/null
+ready=false
+for ((i=0; i<90; i++)); do
+    if docker exec "$container" pg_isready -U homelab_restore_admin -d postgres >/dev/null 2>&1; then
+        ready=true; break
+    fi
+    sleep 2
+done
+[[ "$ready" == true ]] || { echo 'Temporary PostgreSQL startup timeout' >&2; exit 1; }
+# pg_isready can see the entrypoint bootstrap server. Require final PID 1 postgres.
+for ((i=0; i<90; i++)); do
+    if docker exec "$container" sh -c '[ "$(cat /proc/1/comm)" = postgres ]'; then break; fi
+    sleep 2
+done
+docker exec "$container" sh -c '[ "$(cat /proc/1/comm)" = postgres ]'
+for db in n8n rag; do
+    docker exec -i "$container" pg_restore --list < "$dumpdir/$db.dump" >/dev/null
+done
+# Execute globals only in this isolated disposable cluster; validates SQL and roles.
+docker exec -i "$container" psql -X -v ON_ERROR_STOP=1 -U homelab_restore_admin -d postgres \
+    < "$dumpdir/globals.sql" >/dev/null
+for db in n8n rag; do
+    docker exec "$container" createdb -U homelab_restore_admin -O "${db}_app" "$db"
+    docker exec -i "$container" pg_restore -U homelab_restore_admin \
+        --exit-on-error -d "$db" < "$dumpdir/$db.dump"
+done
+tables=$(docker exec "$container" psql -X -U homelab_restore_admin -d n8n -Atqc \
+    "SELECT count(*) FROM pg_tables WHERE schemaname NOT IN ('pg_catalog','information_schema')")
+[[ "$tables" =~ ^[0-9]+$ && "$tables" -gt 0 ]]
+vector=$(docker exec "$container" psql -X -U homelab_restore_admin -d rag -Atqc \
+    "SELECT extversion FROM pg_extension WHERE extname='vector'")
+[[ -n "$vector" ]]
+success_message="Restore-test passed: snapshot=$snapshot n8n_tables=$tables rag_vector=$vector"

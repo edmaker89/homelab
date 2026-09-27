@@ -1,0 +1,16 @@
+---
+n8n_backup_enabled: false
+# Allows credentials deployment and explicit init before starting schedules.
+n8n_backup_timers_enabled: "{{ n8n_backup_enabled }}"
+n8n_backup_sops_file: "{{ playbook_dir }}/../../../secrets/n8n-backup.sops.yaml"
+n8n_backup_restic_repository: "s3:https://b27bd766e1ece5c9ce399d25e9c38101.r2.cloudflarestorage.com/edmaker-homelab-backups/n8n/restic"
+n8n_backup_r2_region: "auto"
+n8n_backup_root: "/var/backups/homelab/n8n"
+n8n_backup_config_dir: "/etc/homelab/n8n-backup"
+n8n_backup_stack_dir: "/opt/homelab/stacks/n8n"
+n8n_backup_app_dir: "/srv/homelab/n8n/app"
+n8n_backup_restore_image: "pgvector/pgvector:0.8.6-pg17-trixie"
+n8n_backup_host: "lab-docker-01"
+n8n_backup_tag: "homelab-n8n"
+n8n_backup_calendar: "*-*-* 00,12:30:00 America/Sao_Paulo"
+n8n_backup_maintenance_calendar: "Sun *-*-* 03:30:00 America/Sao_Paulo"

@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set +x
+set -Eeuo pipefail
+source /usr/local/lib/homelab-n8n-backup/common.sh
+repository_ready
+# Dynamic staging paths must not create separate retention groups.
+restic forget --host "$BACKUP_HOST" --tag "$BACKUP_TAG" --group-by host,tags \
+    --keep-daily 7 --keep-weekly 4 --keep-monthly 6 --prune
+restic check
+echo 'n8n backup maintenance completed'

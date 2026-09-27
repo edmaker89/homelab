@@ -1,0 +1,7 @@
+---
+- name: Configure n8n logical backups to R2
+  hosts: docker_hosts
+  become: true
+  gather_facts: true
+  roles:
+    - n8n_backup

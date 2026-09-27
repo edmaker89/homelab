@@ -1,0 +1,12 @@
+# Managed by Ansible. No credentials here.
+export RESTIC_REPOSITORY={{ n8n_backup_restic_repository | quote }}
+export RESTIC_PASSWORD_FILE={{ (n8n_backup_config_dir ~ '/restic-password') | quote }}
+export RESTIC_CACHE_DIR=/var/cache/homelab-n8n-backup
+export GOMAXPROCS=1
+export GOMEMLIMIT=256MiB
+BACKUP_ROOT={{ n8n_backup_root | quote }}
+STACK_DIR={{ n8n_backup_stack_dir | quote }}
+APP_DIR={{ n8n_backup_app_dir | quote }}
+RESTORE_IMAGE={{ n8n_backup_restore_image | quote }}
+BACKUP_HOST={{ n8n_backup_host | quote }}
+BACKUP_TAG={{ n8n_backup_tag | quote }}
