@@ -1,0 +1,7 @@
+---
+- name: Configure shared Cloudflare Tunnel infrastructure
+  hosts: docker_hosts
+  become: true
+  gather_facts: true
+  roles:
+    - cloudflare_tunnel
