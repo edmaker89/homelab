@@ -1,0 +1,4 @@
+---
+docker_stack_root: "/opt/homelab/stacks"
+docker_config_root: "/etc/homelab"
+docker_data_root: "/srv/homelab"

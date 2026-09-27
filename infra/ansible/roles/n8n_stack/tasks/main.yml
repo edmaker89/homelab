@@ -1,0 +1,53 @@
+---
+- name: Load n8n secrets from SOPS
+  ansible.builtin.set_fact:
+    n8n_secrets: >-
+      {{
+        lookup(
+          'community.sops.sops',
+          n8n_sops_file
+        ) | from_yaml
+      }}
+  no_log: true
+
+- name: Validate required n8n secrets
+  ansible.builtin.assert:
+    that:
+      - n8n_secrets.postgres_password is defined
+      - n8n_secrets.postgres_password | length >= 32
+      - n8n_secrets.n8n_encryption_key is defined
+      - n8n_secrets.n8n_encryption_key | length == 64
+  no_log: true
+
+- name: Ensure n8n stack directory exists
+  ansible.builtin.file:
+    path: "{{ n8n_stack_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Ensure n8n configuration directory exists
+  ansible.builtin.file:
+    path: "{{ n8n_config_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0750"
+
+- name: Ensure n8n data root exists
+  ansible.builtin.file:
+    path: "{{ n8n_data_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Deploy n8n environment secrets
+  ansible.builtin.template:
+    src: n8n.env.j2
+    dest: "{{ n8n_env_file }}"
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true

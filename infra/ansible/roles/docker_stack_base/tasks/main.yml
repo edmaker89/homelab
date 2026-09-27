@@ -1,0 +1,24 @@
+---
+- name: Ensure Docker stack directory exists
+  ansible.builtin.file:
+    path: "{{ docker_stack_root }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Ensure homelab configuration directory exists
+  ansible.builtin.file:
+    path: "{{ docker_config_root }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0750"
+
+- name: Ensure homelab persistent data directory exists
+  ansible.builtin.file:
+    path: "{{ docker_data_root }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"

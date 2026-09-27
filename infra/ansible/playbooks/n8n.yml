@@ -1,0 +1,12 @@
+---
+- name: Configure n8n stack
+  hosts: docker_hosts
+  become: true
+  gather_facts: true
+
+  vars:
+    n8n_sops_file: "{{ playbook_dir }}/../../../secrets/n8n.sops.yaml"
+
+  roles:
+    - docker_stack_base
+    - n8n_stack
