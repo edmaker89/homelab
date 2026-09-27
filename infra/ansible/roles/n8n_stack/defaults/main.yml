@@ -5,6 +5,7 @@ n8n_data_dir: "/srv/homelab/n8n"
 
 n8n_postgres_env_file: "/etc/homelab/n8n/postgres.env"
 n8n_app_env_file: "/etc/homelab/n8n/n8n.env"
+n8n_runners_env_file: "/etc/homelab/n8n/runners.env"
 
 n8n_postgres_init_dir: "/opt/homelab/stacks/n8n/postgres/init"
 
@@ -14,6 +15,8 @@ n8n_postgres_uid: "999"
 n8n_postgres_gid: "999"
 
 n8n_app_data_dir: "/srv/homelab/n8n/app"
-
 n8n_app_uid: "1000"
 n8n_app_gid: "1000"
+
+n8n_runners_config_dir: "/opt/homelab/stacks/n8n/runners"
+n8n_runners_config_file: "/opt/homelab/stacks/n8n/runners/n8n-task-runners.json"

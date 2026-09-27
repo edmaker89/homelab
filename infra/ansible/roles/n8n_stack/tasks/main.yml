@@ -24,6 +24,9 @@
 
       - n8n_secrets.n8n_encryption_key is defined
       - n8n_secrets.n8n_encryption_key | length == 64
+
+      - n8n_secrets.n8n_runners_auth_token is defined
+      - n8n_secrets.n8n_runners_auth_token | length == 64
   no_log: true
 
 - name: Ensure n8n stack directory exists
@@ -84,6 +87,31 @@
     mode: "0600"
   no_log: true
 
+- name: Deploy n8n task runners environment secrets
+  ansible.builtin.template:
+    src: runners.env.j2
+    dest: "{{ n8n_runners_env_file }}"
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true
+
+- name: Ensure n8n task runners configuration directory exists
+  ansible.builtin.file:
+    path: "{{ n8n_runners_config_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Deploy n8n task runners configuration
+  ansible.builtin.copy:
+    src: "{{ n8n_local_stack_source }}/runners/n8n-task-runners.json"
+    dest: "{{ n8n_runners_config_file }}"
+    owner: root
+    group: root
+    mode: "0644"
+
 - name: Ensure PostgreSQL initialization directory exists
   ansible.builtin.file:
     path: "{{ n8n_postgres_init_dir }}"
@@ -99,3 +127,11 @@
     owner: root
     group: root
     mode: "0755"
+
+- name: Deploy n8n Docker Compose definition
+  ansible.builtin.copy:
+    src: "{{ n8n_local_stack_source }}/compose.yaml"
+    dest: "{{ n8n_stack_dir }}/compose.yaml"
+    owner: root
+    group: root
+    mode: "0644"

@@ -13,27 +13,36 @@ set -Eeuo pipefail
 
 PSQL=(
   psql
+  -X
   --set=ON_ERROR_STOP=1
   --username "$POSTGRES_USER"
   --dbname postgres
 )
 
 role_exists() {
+  local role="$1"
+
   "${PSQL[@]}" \
     --tuples-only \
     --no-align \
-    --command "SELECT 1 FROM pg_roles WHERE rolname = :'role'" \
-    --set="role=$1" \
-    | grep -qx '1'
+    --set="role=$role" <<'SQL' | grep -qx '1'
+SELECT 1
+FROM pg_roles
+WHERE rolname = :'role';
+SQL
 }
 
 database_exists() {
+  local database="$1"
+
   "${PSQL[@]}" \
     --tuples-only \
     --no-align \
-    --command "SELECT 1 FROM pg_database WHERE datname = :'database'" \
-    --set="database=$1" \
-    | grep -qx '1'
+    --set="database=$database" <<'SQL' | grep -qx '1'
+SELECT 1
+FROM pg_database
+WHERE datname = :'database';
+SQL
 }
 
 ensure_role() {
@@ -45,36 +54,38 @@ ensure_role() {
   else
     echo "Creating role ${role}."
 
+    BOOTSTRAP_ROLE_PASSWORD="$password" \
     "${PSQL[@]}" \
-      --set="role=$role" \
-      --set="password=$password" \
-      --command '
-        CREATE ROLE :"role"
-        WITH
-          LOGIN
-          NOSUPERUSER
-          NOCREATEDB
-          NOCREATEROLE
-          NOREPLICATION
-          NOBYPASSRLS
-          PASSWORD :'\''password'\'';
-      '
+      --set="role=$role" <<'SQL'
+\getenv role_password BOOTSTRAP_ROLE_PASSWORD
+
+CREATE ROLE :"role"
+WITH
+  LOGIN
+  NOSUPERUSER
+  NOCREATEDB
+  NOCREATEROLE
+  NOREPLICATION
+  NOBYPASSRLS
+  PASSWORD :'role_password';
+SQL
   fi
 
+  BOOTSTRAP_ROLE_PASSWORD="$password" \
   "${PSQL[@]}" \
-    --set="role=$role" \
-    --set="password=$password" \
-    --command '
-      ALTER ROLE :"role"
-      WITH
-        LOGIN
-        NOSUPERUSER
-        NOCREATEDB
-        NOCREATEROLE
-        NOREPLICATION
-        NOBYPASSRLS
-        PASSWORD :'\''password'\'';
-    '
+    --set="role=$role" <<'SQL'
+\getenv role_password BOOTSTRAP_ROLE_PASSWORD
+
+ALTER ROLE :"role"
+WITH
+  LOGIN
+  NOSUPERUSER
+  NOCREATEDB
+  NOCREATEROLE
+  NOREPLICATION
+  NOBYPASSRLS
+  PASSWORD :'role_password';
+SQL
 }
 
 ensure_database() {
@@ -86,15 +97,17 @@ ensure_database() {
 
     "${PSQL[@]}" \
       --set="database=$database" \
-      --set="owner=$owner" \
-      --command 'ALTER DATABASE :"database" OWNER TO :"owner";'
+      --set="owner=$owner" <<'SQL'
+ALTER DATABASE :"database" OWNER TO :"owner";
+SQL
   else
     echo "Creating database ${database} owned by ${owner}."
 
     "${PSQL[@]}" \
       --set="database=$database" \
-      --set="owner=$owner" \
-      --command 'CREATE DATABASE :"database" OWNER :"owner";'
+      --set="owner=$owner" <<'SQL'
+CREATE DATABASE :"database" OWNER :"owner";
+SQL
   fi
 }
 
