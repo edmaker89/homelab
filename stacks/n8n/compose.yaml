@@ -5,6 +5,8 @@ services:
     image: pgvector/pgvector:0.8.6-pg17-trixie
     restart: unless-stopped
 
+    mem_limit: 512m
+
     env_file:
       - /etc/homelab/n8n/postgres.env
 
@@ -37,6 +39,8 @@ services:
   n8n:
     image: docker.n8n.io/n8nio/n8n:2.40.7
     restart: unless-stopped
+
+    mem_limit: 640m
 
     depends_on:
       postgres:
@@ -95,6 +99,8 @@ services:
   task-runners:
     image: n8nio/runners:2.40.7
     restart: unless-stopped
+
+    mem_limit: 512m
 
     depends_on:
       n8n:
