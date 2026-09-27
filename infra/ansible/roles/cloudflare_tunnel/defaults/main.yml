@@ -1,0 +1,10 @@
+---
+cloudflare_tunnel_enabled: false
+cloudflare_tunnel_name: edmaker-homelab
+cloudflare_tunnel_id: 078aa601-ac92-453b-9a01-a1fe1fc17e43
+cloudflare_tunnel_stack_dir: /opt/homelab/stacks/cloudflared
+cloudflare_tunnel_config_dir: /etc/homelab/cloudflared
+cloudflare_tunnel_network: homelab-edge
+cloudflare_tunnel_image: cloudflare/cloudflared:2026.9.3
+cloudflare_tunnel_sops_file: "{{ playbook_dir }}/../../../secrets/cloudflare-tunnel.sops.yaml"
+cloudflare_tunnel_compose_source: "{{ role_path }}/../../../../stacks/cloudflared/compose.yaml"

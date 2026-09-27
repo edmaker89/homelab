@@ -1,0 +1,128 @@
+---
+- name: Validate tunnel settings
+  ansible.builtin.assert:
+    that:
+      - cloudflare_tunnel_name == 'edmaker-homelab'
+      - cloudflare_tunnel_id == '078aa601-ac92-453b-9a01-a1fe1fc17e43'
+      - cloudflare_tunnel_network == 'homelab-edge'
+      - cloudflare_tunnel_stack_dir is match('^/opt/homelab/stacks/[a-zA-Z0-9_-]+$')
+      - cloudflare_tunnel_config_dir is match('^/etc/homelab/[a-zA-Z0-9_-]+$')
+      - cloudflare_tunnel_image is match('^cloudflare/cloudflared:[0-9]+\.[0-9]+\.[0-9]+$')
+
+- name: Load tunnel credentials only when enabled
+  when: cloudflare_tunnel_enabled | bool
+  block:
+    - name: Check encrypted token file on controller
+      ansible.builtin.stat:
+        path: "{{ cloudflare_tunnel_sops_file }}"
+      delegate_to: localhost
+      become: false
+      register: cloudflare_tunnel_sops_stat
+
+    - name: Require SOPS token file
+      ansible.builtin.assert:
+        that: cloudflare_tunnel_sops_stat.stat.exists
+        fail_msg: Create secrets/cloudflare-tunnel.sops.yaml with SOPS before enabling the tunnel.
+
+    - name: Read and validate token without exposing its value
+      block:
+        - name: Decrypt tunnel token
+          ansible.builtin.set_fact:
+            cloudflare_tunnel_secrets: "{{ lookup('community.sops.sops', cloudflare_tunnel_sops_file, rstrip=false) | from_yaml }}"
+          no_log: true
+
+        - name: Validate token contract
+          ansible.builtin.assert:
+            that:
+              - cloudflare_tunnel_secrets is mapping
+              - cloudflare_tunnel_secrets.tunnel_token is string
+              - cloudflare_tunnel_secrets.tunnel_token | length > 0
+              - cloudflare_tunnel_secrets.tunnel_token != 'REPLACE_ME'
+              - cloudflare_tunnel_secrets.tunnel_token == (cloudflare_tunnel_secrets.tunnel_token | trim)
+              - cloudflare_tunnel_secrets.tunnel_token is match('^[A-Za-z0-9+/=_-]+$')
+          no_log: true
+      rescue:
+        - name: Explain invalid credentials safely
+          ansible.builtin.fail:
+            msg: SOPS token invalid or unreadable; require a nonempty single-line tunnel_token (not REPLACE_ME) and AGE access on the controller.
+
+- name: Check Docker Engine
+  ansible.builtin.command: docker version
+  changed_when: false
+  check_mode: false
+
+- name: Check Docker Compose
+  ansible.builtin.command: docker compose version --short
+  changed_when: false
+  check_mode: false
+
+- name: Create stack directory
+  ansible.builtin.file:
+    path: "{{ cloudflare_tunnel_stack_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Create private tunnel configuration directory
+  ansible.builtin.file:
+    path: "{{ cloudflare_tunnel_config_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0700'
+
+- name: Inspect shared network without changing existing attachments
+  ansible.builtin.command:
+    argv: [docker, network, ls, --quiet, --filter, 'name=^homelab-edge$']
+  register: cloudflare_tunnel_network_list
+  changed_when: false
+  check_mode: false
+
+- name: Create shared edge network when absent
+  ansible.builtin.command:
+    argv: [docker, network, create, --driver, bridge, '{{ cloudflare_tunnel_network }}']
+  when: cloudflare_tunnel_network_list.stdout | trim == ''
+  changed_when: true
+
+- name: Install independent cloudflared Compose definition
+  ansible.builtin.copy:
+    src: "{{ cloudflare_tunnel_compose_source }}"
+    dest: "{{ cloudflare_tunnel_stack_dir }}/compose.yaml"
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Install nonsecret Compose settings
+  ansible.builtin.template:
+    src: compose.env.j2
+    dest: "{{ cloudflare_tunnel_stack_dir }}/.env"
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Install tunnel token environment
+  ansible.builtin.template:
+    src: tunnel.env.j2
+    dest: "{{ cloudflare_tunnel_config_dir }}/tunnel.env"
+    owner: root
+    group: root
+    mode: '0600'
+  when: cloudflare_tunnel_enabled | bool
+  no_log: true
+
+- name: Validate installed Compose without resolving secret env files
+  ansible.builtin.command:
+    argv: [docker, compose, --project-directory, '{{ cloudflare_tunnel_stack_dir }}', config, --quiet, --no-env-resolution]
+  changed_when: false
+  when: not ansible_check_mode
+
+- name: Converge enabled connector and require active tunnel readiness
+  ansible.builtin.command:
+    argv: [docker, compose, --project-directory, '{{ cloudflare_tunnel_stack_dir }}', up, --detach, --wait, --wait-timeout, '180', cloudflared]
+  register: cloudflare_tunnel_up
+  changed_when: "(cloudflare_tunnel_up.stdout ~ cloudflare_tunnel_up.stderr) is search('(?i)(creating|created|recreating|recreated|starting|started)')"
+  when:
+    - cloudflare_tunnel_enabled | bool
+    - not ansible_check_mode
+  no_log: true
