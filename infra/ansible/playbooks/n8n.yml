@@ -6,6 +6,7 @@
 
   vars:
     n8n_sops_file: "{{ playbook_dir }}/../../../secrets/n8n.sops.yaml"
+    n8n_local_stack_source: "{{ playbook_dir }}/../../../stacks/n8n"
 
   roles:
     - docker_stack_base
