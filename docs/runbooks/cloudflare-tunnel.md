@@ -2,7 +2,13 @@
 
 ## Naming e arquitetura
 
-`*.homelab.edmaker.dev.br` identifica homelab pessoal, estudo e portfolio. Serviços oficiais EdMaker continuam diretamente sob `*.edmaker.dev.br`.
+O homelab deve ter custo zero. A convenção de nomes públicos é:
+
+- `*-homelab.edmaker.dev.br`: serviços públicos do homelab pessoal, estudo e portfolio.
+- `*.edmaker.dev.br`: plataforma/serviços oficiais EdMaker, reservando o sufixo `-homelab` para o laboratório.
+- `homelab.edmaker.dev.br`: reservado para possível landing page/portal do laboratório.
+
+`*-homelab` representa uma convenção de nomes, não um registro DNS wildcard.
 
 ```text
 Cloudflare Edge → Tunnel → cloudflared → homelab-edge → serviços publicados
@@ -14,7 +20,7 @@ Cloudflare Edge → Tunnel → cloudflared → homelab-edge → serviços public
 | Tunnel existente | `edmaker-homelab` |
 | Tunnel ID | `078aa601-ac92-453b-9a01-a1fe1fc17e43` |
 | Gerenciamento | Remotely managed, configuração de rotas no dashboard Cloudflare |
-| Primeiro hostname | `n8n.homelab.edmaker.dev.br` |
+| Primeiro hostname | `n8n-homelab.edmaker.dev.br` |
 | Origin HTTP | `http://n8n:5678` |
 | Imagem | `cloudflare/cloudflared:2026.9.3` |
 | Compose runtime | `/opt/homelab/stacks/cloudflared` |
@@ -63,7 +69,7 @@ Com enabled=true, o contrato é validado antes de alterações; o token deve ser
 
 Nenhuma etapa abaixo foi executada com token real durante os testes.
 
-1. Conferir cobertura TLS do hostname: em uma zona full setup de `edmaker.dev.br`, Universal SSL padrão cobre o apex e apenas um nível de subdomínio. `n8n.homelab.edmaker.dev.br` precisa de cobertura própria, por exemplo Advanced Certificate/Total TLS ou certificado adequado à configuração da zona. Não alterar o namespace como contorno. Conferir o certificado no dashboard antes da validação HTTPS.
+1. Usar `n8n-homelab.edmaker.dev.br`, subdomínio de primeiro nível coberto gratuitamente pelo Universal SSL em Full Setup. Essa convenção mantém custo zero, sem certificados pagos para este serviço. Conferir no dashboard que o certificado Universal SSL está ativo antes da validação HTTPS.
 2. Preparar infraestrutura sem iniciar tunnel:
 
    ```bash
@@ -79,7 +85,7 @@ Nenhuma etapa abaixo foi executada com token real durante os testes.
    ansible-playbook playbooks/cloudflare-tunnel.yml -e '{"cloudflare_tunnel_enabled":true}'
    ```
 
-4. Após o tunnel ficar online, configurar **manualmente** no dashboard seu Public Hostname: hostname `n8n.homelab.edmaker.dev.br`, Service Type `HTTP`, URL `n8n:5678`. Sem wildcard. Confirmar UUID correto. Não executar `cloudflared tunnel route dns`, curl/API ou criar token de API para isso.
+4. Após o tunnel ficar online, configurar **manualmente** no dashboard seu Public Hostname: hostname `n8n-homelab.edmaker.dev.br`, Service Type `HTTP`, URL `n8n:5678`. Sem wildcard. Confirmar UUID correto. Não executar `cloudflared tunnel route dns`, curl/API ou criar token de API para isso.
 5. Implantar o Compose atualizado do n8n em janela apropriada, com `homelab-edge` já criada:
 
    ```bash
@@ -113,7 +119,7 @@ Não publicar a porta 2000 para consultar `/ready`: o comando acima faz a consul
 
 - Unhealthy: conferir token do tunnel correto, DNS/egress da VM, saída TCP/UDP 7844, limites de recursos e logs.
 - Tunnel saudável, origin 502: conferir que o n8n foi recriado com a rede edge, nome DNS Docker `n8n`, porta 5678 e readiness do app.
-- Falha TLS no hostname: conferir certificado que cobre o subdomínio de segundo nível; tunnel saudável não resolve ausência de certificado público.
+- Falha TLS no hostname: conferir que o Universal SSL está ativo e cobre `n8n-homelab.edmaker.dev.br`; tunnel saudável não resolve ausência de certificado público.
 - Webhooks/redirects incorretos: conferir variáveis HTTPS atuais e proxy hops, sem alterar WEBHOOK_URL legada.
 - `homelab-edge` ausente: aplicar primeiro a role cloudflare_tunnel desativada. A stack n8n não cria rede external por conta própria.
 
@@ -132,7 +138,7 @@ Gerar/rotacionar o token no dashboard do tunnel existente. Atualizar `secrets/cl
 
 ## Adicionar serviços
 
-Para Grafana, MinIO ou outro serviço, conectar explicitamente somente o frontend/origin desejado à rede external `homelab-edge` em sua própria stack. Usar aliases únicos para evitar colisões de DNS entre projetos. Publicar manualmente um hostname específico sob `homelab.edmaker.dev.br` apontando ao nome/porta internos. Validar autenticação, TLS público e parâmetros de proxy do serviço. Não adicionar wildcard nem conectar automaticamente todos os serviços/bancos à edge.
+Para Grafana, MinIO ou outro serviço, conectar explicitamente somente o frontend/origin desejado à rede external `homelab-edge` em sua própria stack. Usar aliases únicos para evitar colisões de DNS entre projetos. Publicar manualmente um hostname de primeiro nível no formato `<serviço>-homelab.edmaker.dev.br`, como `grafana-homelab.edmaker.dev.br`, `minio-homelab.edmaker.dev.br` ou `portainer-homelab.edmaker.dev.br`, apontando ao nome/porta internos. Manter `homelab.edmaker.dev.br` reservado para o possível portal do laboratório. Validar autenticação, TLS público e parâmetros de proxy do serviço. Não adicionar wildcard nem conectar automaticamente todos os serviços/bancos à edge.
 
 ## Validação reproduzível
 

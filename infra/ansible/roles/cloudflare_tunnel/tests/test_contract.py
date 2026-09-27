@@ -39,9 +39,9 @@ class TunnelContract(unittest.TestCase):
     def test_n8n_https_and_lan_preserved(self):
         service = self.n8n['services']['n8n']
         self.assertEqual(service['ports'], ['192.168.15.220:5678:5678'])
-        expected = dict(N8N_HOST='n8n.homelab.edmaker.dev.br', N8N_PROTOCOL='https',
-                        N8N_EDITOR_BASE_URL='https://n8n.homelab.edmaker.dev.br/',
-                        N8N_WEBHOOK_URL='https://n8n.homelab.edmaker.dev.br/',
+        expected = dict(N8N_HOST='n8n-homelab.edmaker.dev.br', N8N_PROTOCOL='https',
+                        N8N_EDITOR_BASE_URL='https://n8n-homelab.edmaker.dev.br/',
+                        N8N_WEBHOOK_URL='https://n8n-homelab.edmaker.dev.br/',
                         N8N_PROXY_HOPS='1', N8N_SECURE_COOKIE='true')
         for key, value in expected.items():
             self.assertEqual(service['environment'][key], value)

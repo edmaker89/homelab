@@ -58,10 +58,10 @@ services:
       DB_POSTGRESDB_USER: n8n_app
       DB_POSTGRESDB_SCHEMA: public
 
-      N8N_HOST: n8n.homelab.edmaker.dev.br
+      N8N_HOST: n8n-homelab.edmaker.dev.br
       N8N_PROTOCOL: https
-      N8N_EDITOR_BASE_URL: https://n8n.homelab.edmaker.dev.br/
-      N8N_WEBHOOK_URL: https://n8n.homelab.edmaker.dev.br/
+      N8N_EDITOR_BASE_URL: https://n8n-homelab.edmaker.dev.br/
+      N8N_WEBHOOK_URL: https://n8n-homelab.edmaker.dev.br/
       N8N_PROXY_HOPS: "1"
       N8N_SECURE_COOKIE: "true"
 
