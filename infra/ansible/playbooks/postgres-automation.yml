@@ -1,0 +1,7 @@
+---
+- name: Provision automation database on the existing PostgreSQL container
+  hosts: docker_hosts
+  become: true
+  gather_facts: false
+  roles:
+    - postgres_automation

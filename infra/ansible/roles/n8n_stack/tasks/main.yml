@@ -22,6 +22,11 @@
       - n8n_secrets.rag_db_password is defined
       - n8n_secrets.rag_db_password | length == 64
 
+      - n8n_secrets.automation_db_password is defined
+      - n8n_secrets.automation_db_password is string
+      - n8n_secrets.automation_db_password | length == 64
+      - n8n_secrets.automation_db_password is match('^[a-fA-F0-9]{64}$')
+
       - n8n_secrets.n8n_encryption_key is defined
       - n8n_secrets.n8n_encryption_key | length == 64
 

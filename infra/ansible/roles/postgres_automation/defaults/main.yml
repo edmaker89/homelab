@@ -1,0 +1,3 @@
+---
+postgres_automation_stack_dir: /opt/homelab/stacks/n8n
+postgres_automation_sops_file: "{{ playbook_dir }}/../../../secrets/n8n.sops.yaml"
